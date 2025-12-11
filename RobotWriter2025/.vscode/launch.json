@@ -9,7 +9,7 @@
       "stopAtEntry": false,
       "externalConsole": true,
       "cwd": ".",
-      "program": "build/Debug/outDebug",
+      "program": "RobotWriter2025SkeletonCode/robot.exe",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

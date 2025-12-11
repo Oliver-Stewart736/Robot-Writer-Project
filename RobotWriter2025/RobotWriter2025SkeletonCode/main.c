@@ -46,7 +46,7 @@ int main()
     scanf("%s", filename);
 
     /* User input for font size */
-    printf("Enter a drawing height (4–10 mm): ");
+    printf("Enter a drawing height between 4 and 10 mm: ");
     scanf("%f", &userHeight);
 
     // If height entered is outside the range report and error
@@ -71,13 +71,13 @@ int main()
     printf ("\nThe robot is now ready to draw\n");
 
     /* Move robot to start position */
-    sprintf (buffer, "G1 X0 Y0 F1000\n");
+    sprintf (buffer, "G1 X0 Y0 F1000");
     SendCommands(buffer);
-    sprintf (buffer, "M3\n");
+    sprintf (buffer, "M3");
     SendCommands(buffer);
 
     /* Set the pen up*/
-    sprintf (buffer, "S0\n");
+    sprintf (buffer, "S0");
     SendCommands(buffer);
 
     /* Load the font file */
@@ -142,10 +142,10 @@ int main()
     }
 
     /* Finish Drawing */
-    sprintf (buffer, "S0\n");           // Pen up
+    sprintf (buffer, "S0");           // Pen up
     SendCommands(buffer);
 
-    sprintf (buffer, "G0 X0 Y0\n");     // Return to starting position
+    sprintf (buffer, "G0 X0 Y0");     // Return to starting position
     SendCommands(buffer);
     
     CloseRS232Port();                   // Before we exit the program we need to close the COM port
@@ -180,10 +180,10 @@ void newLine(float *currentX, float *currentY)
         return;
     }
 
-    sprintf(buffer, "S0\n");         // Pen up
+    sprintf(buffer, "S0");         // Pen up
     SendCommands(buffer);
 
-    sprintf(buffer, "G0 X%.3f Y%.3f\n", newX, newY);   // Move robot arm
+    sprintf(buffer, "G0 X%.3f Y%.3f", newX, newY);   // Move robot arm
     SendCommands(buffer);
 
     *currentX = newX;                // Update X
@@ -198,10 +198,10 @@ void handleSpace(float *currentX, float *currentY, float scaleFactor)
  
     char buffer[100];
  
-    sprintf(buffer, "S0\n");        // Pen up
+    sprintf(buffer, "S0");        // Pen up
     SendCommands(buffer);
  
-    sprintf(buffer, "G0 X%.3f Y%.3f\n", newX, newY);  // Move robot arm to new X, Y position
+    sprintf(buffer, "G0 X%.3f Y%.3f", newX, newY);  // Move robot arm to new X, Y position
     SendCommands(buffer);
  
     *currentX = newX;               // Update stored X value
@@ -241,18 +241,18 @@ void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[
 
         if (ch->strokes[i].pen == 0)                    // If it is a pen up command
         {
-            sprintf(buffer, "S0\n");                    // Pen Up
+            sprintf(buffer, "S0");                    // Pen Up
             SendCommands(buffer);
 
-            sprintf(buffer, "G0 X%.3f Y%.3f\n", x, y);  // Move to X,Y without drawing
+            sprintf(buffer, "G0 X%.3f Y%.3f", x, y);  // Move to X,Y without drawing
             SendCommands(buffer);
         }
         else                                            // If it is a pen down command
         {
-            sprintf(buffer, "S1000\n");                 // Pen Down
+            sprintf(buffer, "S1000");                 // Pen Down
             SendCommands(buffer);
 
-            sprintf(buffer, "G1 X%.3f Y%.3f\n", x, y);  // Move to X, Y whilst drawing
+            sprintf(buffer, "G1 X%.3f Y%.3f", x, y);  // Move to X, Y whilst drawing
             SendCommands(buffer);
         }
     }
