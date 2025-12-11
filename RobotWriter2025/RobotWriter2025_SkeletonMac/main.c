@@ -185,6 +185,13 @@ void newLine(float *currentX, float *currentY)
 
     float newX = 0.0f;               // New X to start of new line
     float newY = *currentY - 5.0f;   // New Y down 5 mm
+ 
+    // PAGE OVERFLOW CHECK
+    if (newY < -100.0f)
+    {
+        printf("Error: Page overflow cannot move to a new line.\n");
+        return;
+    }
 
     sprintf(buffer, "S0\n");         // Pen up
     SendCommands(buffer);
