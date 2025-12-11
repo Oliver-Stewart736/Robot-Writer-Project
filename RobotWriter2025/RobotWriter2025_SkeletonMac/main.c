@@ -57,6 +57,8 @@ int main()
 
     // These are sample commands to draw out some information 
     // This is the section that you will replace with your own code
+
+    
     sprintf (buffer, "G0 X2.5 Y-2.5\n");
     SendCommands(buffer);
     sprintf (buffer, "S1000\n");
