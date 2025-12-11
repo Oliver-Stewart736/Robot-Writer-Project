@@ -9,25 +9,29 @@
  */
 int loadStrokesFile(char *filename, CharacterData font[])
 {
-    FILE *fp;
-    int marker;
-    int ascii;
-    int strokeCount;
-    int i;
+    // Variable declarations
+    FILE *fp;               // File pointer
+    int marker;             // Stores the 999 value for a new character 
+    int ascii;              // Stores the ASCII code
+    int strokeCount;        // Stores the number of strokes
+    int i;                  // Loop counter
 
+    /* Open font file in read mode */
     fp = fopen(filename, "r");
+
+    /* If file not opened report error */
     if (fp == NULL)
     {
         printf("Error: could not open font file %s\n", filename);
         return 0;
     }
 
-    /* Initialise the array so we know if any characters are missing */
+    /* Create an entry for each ASCII code */
     for (i = 0; i < 128; i++)
     {
-        font[i].asciiCode = i;
-        font[i].strokeCount = 0;
-        font[i].width = 0;
+        font[i].asciiCode = i;          // Sets ASCII code from 0 - 127
+        font[i].strokeCount = 0;        // Leave as 0 for now
+        font[i].width = 0;              // Leave as 0 for now
     }
 
     /* Read until the end of the file */
@@ -36,16 +40,17 @@ int loadStrokesFile(char *filename, CharacterData font[])
         int j;
         int x, y, p;
 
+        
+        /* If this line does not mark a new character skip it */
         if (marker != 999)
         {
-            /* If this line does not mark a new character just skip it */
             continue;
         }
 
+        /* Ignore invalid ASCII codes */
         if (ascii < 0 || ascii > 127)
         {
-            /* Ignore invalid ASCII codes */
-            /* Read and discard the stroke lines */
+            /* Read the stroke lines so they get discarded */
             for (j = 0; j < strokeCount; j++)
             {
                 fscanf(fp, "%d %d %d", &x, &y, &p);
@@ -53,18 +58,21 @@ int loadStrokesFile(char *filename, CharacterData font[])
             continue;
         }
 
+        /* Store the ASCII code and Stroke Count for the character in the font array*/
         font[ascii].asciiCode = ascii;
         font[ascii].strokeCount = strokeCount;
 
+         /* Loop through all the strokes for this character */
         for (j = 0; j < strokeCount; j++)
         {
+            /* Read one stroke line */
             if (fscanf(fp, "%d %d %d", &x, &y, &p) != 3)
             {
-                /* Error reading stroke data */
-                fclose(fp);
-                return 0;
+                fclose(fp);     // If stroke cannot be read, abort file loading
+                return 0;       // Return 0 if it fails
             }
 
+            /* Store the Strokes Count for the character in the font array*/
             font[ascii].strokes[j].x = x;
             font[ascii].strokes[j].y = y;
             font[ascii].strokes[j].pen = p;
@@ -72,13 +80,13 @@ int loadStrokesFile(char *filename, CharacterData font[])
             /* The last X value is used as the character width */
             if (j == strokeCount - 1)
             {
-                font[ascii].width = x;
+                font[ascii].width = x;  // Store the Width for the character in the font array
             }
         }
     }
 
-    fclose(fp);
-    return 1;
+    fclose(fp);     // Close file after reading into font array
+    return 1;       // Return 1 if it succeeds
 }
 
 /* 
@@ -88,7 +96,7 @@ int loadStrokesFile(char *filename, CharacterData font[])
 float calculateScalingFactor(float userHeight)
 {
     /* Font is designed with a height of 18 units */
-    return userHeight / 18.0f;
+    return userHeight / 18.0f;  // Divide by a float as a double is not needed and float is quicker
 }
 
 /*
@@ -97,20 +105,21 @@ float calculateScalingFactor(float userHeight)
  */
 float getWordWidth(char text[], int startIndex, CharacterData font[], float scale)
 {
-    float width = 0.0f;
-    int i = startIndex;
-    int ascii;
+    float width = 0.0f;         // Declare width as a float
+    int i = startIndex;         // Start from given index
+    int ascii;                  // ASCII value of current character
 
+    /* Loop through the text unitl end of string, newline or space */
     while (text[i] != '\0' && text[i] != '\n' && text[i] != ' ')
     {
-        ascii = (int)text[i];
+        ascii = (int)text[i];       // Store the ASCII code of the character
 
-        if (ascii >= 0 && ascii < 128)
+        if (ascii >= 0 && ascii < 128)          // If ASCII value is valid
         {
-            width = width + (font[ascii].width * scale);
+            width += font[ascii].width * scale + 2.0f * scale;    // Add the width of character scaled to width as well as character spacing
         }
 
-        i = i + 1;
+        i++;           // Move to next character
     }
 
     return width;

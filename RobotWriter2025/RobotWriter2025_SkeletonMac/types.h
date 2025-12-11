@@ -1,19 +1,22 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef TYPES_H     // Has TYPES_H been defined already?
+#define TYPES_H     // If not, define it now
 
+/* Define Stroke Struct */
 typedef struct
 {
-    int x;
-    int y;
-    int pen;   /* 0 = pen up, 1 = pen down */
+    int x;      // X coord as an int
+    int y;      // Y coord as an int
+    int pen;    // Pen up = 0, Pen down =1
 } Stroke;
 
+/* Define CharacterData Struct */
 typedef struct
 {
-    int asciiCode;         /* ASCII code for the character */
-    int strokeCount;       /* Number of movements */
-    Stroke strokes[200];   /* List of stroke movements */
-    int width;             /* Character width in font units */
+    int asciiCode;         // ASCII code for the character as an int
+    int strokeCount;       // Number of strokes as an int
+    Stroke strokes[200];   // Array of stroke commands
+    int width;             // Character width in font units as an int
 } CharacterData;
 
-#endif
+#endif                     // End the block
+

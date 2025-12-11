@@ -11,27 +11,32 @@
 #include <conio.h>
 #endif
 
+// Include the header files 
 #include "serial.h"
 #include "types.h"
 #include "font.h"
 #include "text.h"
 
 #define bdrate 115200               /* 115200 baud */
-#define MAX_LINE_WIDTH 100.0f
+#define MAX_LINE_WIDTH 100.0f       // Max line width 
 
+/* Function to send commands to the robot */
 void SendCommands (char *buffer );
+/* Function to start a new line */
 void newLine(float *currentX, float *currentY);
+/* Function to handle spaces */
+void handleSpace(float *currentX, float *currentY, float scaleFactor);
+/* Function to send a character for the robot to write */
 void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale);
-float getWordWidth(char text[], int index, CharacterData font[], float scale);
 
 int main()
 {
-    char buffer[100];
-    char textBuffer[MAX_TEXT_LENGTH];
-    char filename[50];
-    CharacterData font[128];
-    float userHeight;
-    float scaleFactor;
+    char buffer[100];                   // Buffer for G-Code
+    char textBuffer[MAX_TEXT_LENGTH];   // Stores loaded text
+    char filename[50];                  // Stores user input filename
+    CharacterData font[128];            // Array of all ASCII character structs
+    float userHeight;                   // Height chosen by user stored as a float
+    float scaleFactor;                  // Scale factor used when drawing characters
 
     // If we cannot open the port then give up immediatly
     if ( CanRS232PortBeOpened() == -1 )
@@ -40,18 +45,20 @@ int main()
         exit (0);
     }
 
-    // USER INPUT
+    /* User input for filename */
     printf("\nEnter the text file to load: "); 
     scanf("%s", filename);
 
+    /* User input for font size */
     printf("Enter a drawing height (4–10 mm): ");
     scanf("%f", &userHeight);
 
+    // If height entered is outside the range report and error
     if (userHeight < 4 || userHeight > 10)
     {
         printf("Error: Height must be between 4 and 10 mm.\n");
-        CloseRS232Port();
-        return 1;
+        CloseRS232Port();   // Before we exit the program we need to close the COM port
+        return 1;           // return 1 if there is error
     }
 
     // Time to wake up the robot
@@ -68,15 +75,17 @@ int main()
     #endif
 
     WaitForDollar();
-
     printf ("\nThe robot is now ready to draw\n");
 
+    /* Move robot to start position */
     sprintf (buffer, "G1 X0 Y0 F1000\n");
     SendCommands(buffer);
 
+    /* what is spindle mode?? */
     sprintf (buffer, "M3\n");
     SendCommands(buffer);
 
+    /* Set the pen up*/
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
 
@@ -84,71 +93,71 @@ int main()
     if (loadStrokesFile("SingleStrokeFont.txt", font) == 0)
     {
         printf("\nError: Could not load SingleStrokeFont.txt\n");
-        CloseRS232Port();
-        return 1;
+        CloseRS232Port();   // Before we exit the program we need to close the COM port
+        return 1;           // return 1 if there is error
     }
 
     /* Load text file */
     if (loadTextFile(filename, textBuffer) == 0)
     {
         printf("\nError: Could not load %s\n", filename);
-        CloseRS232Port();
-        return 1;
+        CloseRS232Port();   // Close connection to robot
+        return 1;           // return 1 if there is error
     }
 
-    /* Compute scaling factor */
+    /* Calculate scaling factor */
     scaleFactor = calculateScalingFactor(userHeight);
 
-    float currentX = 0.0f;
-    float currentY = 0.0f;
+    float currentX = 0.0f;      // Track X position as a float
+    float currentY = 0.0f;      // Track Y position as a float
 
-    int i = 0;
+    int i = 0;                  // Define index for text buffer
 
+    /* Main drawing loop */
     while (textBuffer[i] != '\0')
     {
-        char c = textBuffer[i];
+        char c = textBuffer[i];                     // Stores current character
 
-        /* Newline control character */
+        /* Handles newlines */
         if (c == '\n')
         {
             newLine(&currentX, &currentY);
-            i++;
+            i++;                                    // Move to next character
             continue;
         }
 
-        /* SPACE handling */
+        /* Handles spaces */
         if (c == ' ')
         {
-            currentX += (5.0f * scaleFactor);    // standard space width
-            i++;
+            handleSpace(&currentX, &currentY, scaleFactor);
+            i++;                                    // Move to next character
             continue;
         }
 
+        /* If the upcoming word is too long start a new line */
         float upcomingWordWidth = getWordWidth(textBuffer, i, font, scaleFactor);
-
         if (currentX + upcomingWordWidth > MAX_LINE_WIDTH)
         {
             newLine(&currentX, &currentY);
         }
 
-        /* DRAW CHARACTER */
+        /* Draw character */
         sendCharacter(c, &currentX, &currentY, font, scaleFactor);
 
-        /* small spacing between characters */
+        /* Add a small spacing so letters don't collide */
         currentX += (2.0f * scaleFactor);
 
-        i++;
+        i++;       // Move to next character
     }
 
-    /* Finish up */
-    sprintf (buffer, "S0\n");
+    /* Finish Drawing */
+    sprintf (buffer, "S0\n");           // Pen up
     SendCommands(buffer);
 
-    sprintf (buffer, "G0 X0 Y0\n");
+    sprintf (buffer, "G0 X0 Y0\n");     // Return to starting position
     SendCommands(buffer);
     
-    // Before we exit the program we need to close the COM port
-    CloseRS232Port();
+    CloseRS232Port();                   // Before we exit the program we need to close the COM port
     printf("Com port now closed\n");
 
     return (0);
@@ -172,75 +181,87 @@ void SendCommands (char *buffer )
 /* Move to a new line */
 void newLine(float *currentX, float *currentY)
 {
-    *currentX = 0.0f;
-    *currentY = *currentY - 5.0f;   // 5 mm line spacing
+    char buffer[100];
+
+    float newX = 0.0f;               // New X to start of new line
+    float newY = *currentY - 5.0f;   // New Y down 5 mm
+
+    sprintf(buffer, "S0\n");         // Pen up
+    SendCommands(buffer);
+
+    sprintf(buffer, "G0 X%.3f Y%.3f\n", newX, newY);   // Move robot arm
+    SendCommands(buffer);
+
+    *currentX = newX;                // Update X
+    *currentY = newY;                // Update Y
+}
+
+/* Handle spaces*/
+void handleSpace(float *currentX, float *currentY, float scaleFactor)
+ {
+    float newX = *currentX + (5.0f * scaleFactor);   // Calculate new X
+    float newY = *currentY;                          // Same Y position
+ 
+    char buffer[100];
+ 
+    sprintf(buffer, "S0\n");        // Pen up
+    SendCommands(buffer);
+ 
+    sprintf(buffer, "G0 X%.3f Y%.3f\n", newX, newY);  // Move robot arm to new X, Y position
+    SendCommands(buffer);
+ 
+    *currentX = newX;               // Update stored X value
 }
 
 /* Draw a character */
 void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale)
 {
-    int ascii;
-    CharacterData *ch;
-    int i;
-    float x, y;
+    int ascii;                  // Store ASCII  numebr of character
+    CharacterData *ch;          // Pointer to the character stroke data
+    int i;                      // Index
+    float x, y;                 // Scaled target coords as float
     char buffer[100];
 
-    ascii = (int)c;
+    ascii = (int)c;             // Convert character to ASCII code
 
+    /* Ignore invalid ASCII codes */
     if (ascii < 0 || ascii > 127)
     {
         return;
     }
 
-    ch = &font[ascii];
+    ch = &font[ascii];              // Get character's data from font array
 
+    /* If character has no strokes  skip it */
     if (ch->strokeCount == 0)
     {
         *currentX += (3.0f * scale);
         return;
     }
 
+    /* Loop through every stroke of the character */
     for (i = 0; i < ch->strokeCount; i++) 
     {
-        x = *currentX + (ch->strokes[i].x * scale);
-        y = *currentY + (ch->strokes[i].y * scale);
+        x = *currentX + (ch->strokes[i].x * scale);     // Calculate new X
+        y = *currentY + (ch->strokes[i].y * scale);     // Calculate new Y
 
-        if (ch->strokes[i].pen == 0)
+        if (ch->strokes[i].pen == 0)                    // If it is a pen up command
         {
-            sprintf(buffer, "S0\n");
+            sprintf(buffer, "S0\n");                    // Pen Up
             SendCommands(buffer);
 
-            sprintf(buffer, "G0 X%.3f Y%.3f\n", x, y);
+            sprintf(buffer, "G0 X%.3f Y%.3f\n", x, y);  // Move to X,Y without drawing
             SendCommands(buffer);
         }
-        else
+        else                                            // If it is a pen down command
         {
-            sprintf(buffer, "S1000\n");
+            sprintf(buffer, "S1000\n");                 // Pen Down
             SendCommands(buffer);
 
-            sprintf(buffer, "G1 X%.3f Y%.3f\n", x, y);
+            sprintf(buffer, "G1 X%.3f Y%.3f\n", x, y);  // Move to X, Y whilst drawing
             SendCommands(buffer);
         }
     }
 
-    *currentX += (ch->width * scale);
-}
-
-float getWordWidth(char text[], int index, CharacterData font[], float scale)
-{
-    float width = 0.0f;
-
-    while (text[index] != '\0' && text[index] != ' ' && text[index] != '\n')
-    {
-        int ascii = (int)text[index];
-
-        if (ascii >= 0 && ascii <= 127)
-        {
-            width += (font[ascii].width * scale) + (2.0f * scale);
-        }
-
-        index++;
-    }
-
-    return width;
+    *currentX += (ch->width * scale);                   // Update current X
 }
