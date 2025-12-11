@@ -80,3 +80,38 @@ int loadStrokesFile(char *filename, CharacterData font[])
     fclose(fp);
     return 1;
 }
+
+/* 
+ * Calculate the scaling factor to convert the 18-unit high font
+ * into the requested height in mm.
+ */
+float calculateScalingFactor(float userHeight)
+{
+    /* Font is designed with a height of 18 units */
+    return userHeight / 18.0f;
+}
+
+/*
+ * Return the width of the next word starting at startIndex.
+ * The width is returned in mm (scaled).
+ */
+float getWordWidth(char text[], int startIndex, CharacterData font[], float scale)
+{
+    float width = 0.0f;
+    int i = startIndex;
+    int ascii;
+
+    while (text[i] != '\0' && text[i] != '\n' && text[i] != ' ')
+    {
+        ascii = (int)text[i];
+
+        if (ascii >= 0 && ascii < 128)
+        {
+            width = width + (font[ascii].width * scale);
+        }
+
+        i = i + 1;
+    }
+
+    return width;
+}
