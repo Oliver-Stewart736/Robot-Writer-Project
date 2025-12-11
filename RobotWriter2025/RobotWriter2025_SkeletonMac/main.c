@@ -17,10 +17,12 @@
 #include "text.h"
 
 #define bdrate 115200               /* 115200 baud */
+#define MAX_LINE_WIDTH 100.0f
 
 void SendCommands (char *buffer );
-void newLine(float *currentX, float *currentY); 
+void newLine(float *currentX, float *currentY);
 void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale);
+float getWordWidth(char text[], int index, CharacterData font[], float scale);
 
 int main()
 {
@@ -38,6 +40,7 @@ int main()
         exit (0);
     }
 
+    // USER INPUT
     printf("\nEnter the text file to load: "); 
     scanf("%s", filename);
 
@@ -64,19 +67,19 @@ int main()
     Sleep(100);
     #endif
 
-
-    // This is a special case - we wait  until we see a dollar ($)
     WaitForDollar();
 
     printf ("\nThe robot is now ready to draw\n");
 
     sprintf (buffer, "G1 X0 Y0 F1000\n");
     SendCommands(buffer);
+
     sprintf (buffer, "M3\n");
     SendCommands(buffer);
+
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
-    
+
     /* Load the font file */
     if (loadStrokesFile("SingleStrokeFont.txt", font) == 0)
     {
@@ -85,25 +88,27 @@ int main()
         return 1;
     }
 
-    /* Load text using the filename provided by the user */
+    /* Load text file */
     if (loadTextFile(filename, textBuffer) == 0)
     {
         printf("\nError: Could not load %s\n", filename);
+        CloseRS232Port();
         return 1;
     }
 
     /* Compute scaling factor */
-    scaleFactor = calculateScalingFactor(userHeight); 
+    scaleFactor = calculateScalingFactor(userHeight);
 
-    /* ==== Draw text (Commit 8 code remains unchanged) ==== */
     float currentX = 0.0f;
     float currentY = 0.0f;
 
     int i = 0;
+
     while (textBuffer[i] != '\0')
     {
         char c = textBuffer[i];
 
+        /* Newline control character */
         if (c == '\n')
         {
             newLine(&currentX, &currentY);
@@ -111,20 +116,37 @@ int main()
             continue;
         }
 
+        /* SPACE handling */
+        if (c == ' ')
+        {
+            currentX += (5.0f * scaleFactor);    // standard space width
+            i++;
+            continue;
+        }
+
+        float upcomingWordWidth = getWordWidth(textBuffer, i, font, scaleFactor);
+
+        if (currentX + upcomingWordWidth > MAX_LINE_WIDTH)
+        {
+            newLine(&currentX, &currentY);
+        }
+
+        /* DRAW CHARACTER */
         sendCharacter(c, &currentX, &currentY, font, scaleFactor);
 
+        /* small spacing between characters */
         currentX += (2.0f * scaleFactor);
 
         i++;
     }
 
+    /* Finish up */
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
+
     sprintf (buffer, "G0 X0 Y0\n");
     SendCommands(buffer);
-    // End of sample g-code
     
-
     // Before we exit the program we need to close the COM port
     CloseRS232Port();
     printf("Com port now closed\n");
@@ -139,6 +161,7 @@ void SendCommands (char *buffer )
     // printf ("Buffer to send: %s", buffer); // For diagnostic purposes only, normally comment out
     PrintBuffer (&buffer[0]);
     WaitForReply();
+
     #ifdef MAC
     sleep(0.1);
     #else
@@ -146,12 +169,14 @@ void SendCommands (char *buffer )
     #endif
 }
 
+/* Move to a new line */
 void newLine(float *currentX, float *currentY)
 {
     *currentX = 0.0f;
-    *currentY = *currentY - 5.0f;
+    *currentY = *currentY - 5.0f;   // 5 mm line spacing
 }
 
+/* Draw a character */
 void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale)
 {
     int ascii;
@@ -171,13 +196,13 @@ void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[
 
     if (ch->strokeCount == 0)
     {
-        *currentX = *currentX + (3.0f * scale);
+        *currentX += (3.0f * scale);
         return;
     }
 
     for (i = 0; i < ch->strokeCount; i++) 
     {
-        x = *currentX + (ch->strokes[i].x * scale); 
+        x = *currentX + (ch->strokes[i].x * scale);
         y = *currentY + (ch->strokes[i].y * scale);
 
         if (ch->strokes[i].pen == 0)
@@ -198,5 +223,24 @@ void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[
         }
     }
 
-    *currentX = *currentX + (ch->width * scale);
+    *currentX += (ch->width * scale);
+}
+
+float getWordWidth(char text[], int index, CharacterData font[], float scale)
+{
+    float width = 0.0f;
+
+    while (text[index] != '\0' && text[index] != ' ' && text[index] != '\n')
+    {
+        int ascii = (int)text[index];
+
+        if (ascii >= 0 && ascii <= 127)
+        {
+            width += (font[ascii].width * scale) + (2.0f * scale);
+        }
+
+        index++;
+    }
+
+    return width;
 }
