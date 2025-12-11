@@ -62,17 +62,28 @@ int loadStrokesFile(char *filename, CharacterData font[])
         font[ascii].asciiCode = ascii;
         font[ascii].strokeCount = strokeCount;
 
-         /* Loop through all the strokes for this character */
+        /* Loop through all the strokes for this character */
         for (j = 0; j < strokeCount; j++)
         {
             /* Read one stroke line */
-            if (fscanf(fp, "%d %d %d", &x, &y, &p) != 3)
+            int found = fscanf(fp, "%d %d %d", &x, &y, &p);
+            if (found != 3)
             {
-                fclose(fp);     // If stroke cannot be read, abort file loading
-                return 0;       // Return 0 if it fails
+                if (found == EOF) // If end reached end of file stop reading the file
+                {
+                    printf("Reached end of file, before all strokes for character\n");
+                    break;
+                } 
+                else 
+                {
+                    printf("File format not correct, found line with %d numbers, expecting always 3\n", found);
+                    return 0;
+                }
+                
+                fclose(fp);
             }
 
-            /* Store the Strokes Count for the character in the font array*/
+            /* Store the Strokes Count for the character in the font array */
             font[ascii].strokes[j].x = x;
             font[ascii].strokes[j].y = y;
             font[ascii].strokes[j].pen = p;
