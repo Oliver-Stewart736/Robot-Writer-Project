@@ -86,6 +86,28 @@ int main()
     /* Compute scaling factor */
     scaleFactor = calculateScalingFactor(userHeight);
 
+    float currentX = 0.0f;
+    float currentY = 0.0f;
+
+    int i = 0;
+    while (textBuffer[i] != '\0')
+    {
+        char c = textBuffer[i];
+
+        if (c == '\n')
+        {
+            newLine(&currentX, &currentY);
+            i++;
+            continue;
+        }
+
+        sendCharacter(c, &currentX, &currentY, font, scaleFactor);
+
+        currentX += (2.0f * scaleFactor);
+
+        i++;
+    }
+
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
     sprintf (buffer, "G0 X0 Y0\n");
