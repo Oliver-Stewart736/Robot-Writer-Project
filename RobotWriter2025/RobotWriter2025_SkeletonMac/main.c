@@ -198,7 +198,7 @@ void newLine(float *currentX, float *currentY)
 
 /* Handle spaces*/
 void handleSpace(float *currentX, float *currentY, float scaleFactor)
- {
+{
     float newX = *currentX + (5.0f * scaleFactor);   // Calculate new X
     float newY = *currentY;                          // Same Y position
  
