@@ -1,6 +1,8 @@
 #ifndef TYPES_H     // Has TYPES_H been defined already?
 #define TYPES_H     // If not, define it now
 
+#define MAX_STROKES 200
+
 /* Define Stroke Struct */
 typedef struct
 {
@@ -14,7 +16,7 @@ typedef struct
 {
     int asciiCode;         // ASCII code for the character as an int
     int strokeCount;       // Number of strokes as an int
-    Stroke strokes[200];   // Array of stroke commands
+    Stroke strokes[MAX_STROKES];   // Array of stroke commands
     int width;             // Character width in font units as an int
 } CharacterData;
 
