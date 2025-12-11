@@ -12,6 +12,9 @@
 #endif
 
 #include "serial.h"
+#include "types.h"
+#include "font.h"
+#include "text.h"
 
 #define bdrate 115200               /* 115200 baud */
 
@@ -20,7 +23,11 @@ void SendCommands (char *buffer );
 int main()
 {
     char buffer[100];
- 
+    char textBuffer[MAX_TEXT_LENGTH];
+    CharacterData font[128];
+    float userHeight;
+    float scaleFactor;
+
     // If we cannot open the port then give up immediatly
     if ( CanRS232PortBeOpened() == -1 )
     {
@@ -54,23 +61,29 @@ int main()
     SendCommands(buffer);
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
-
-    // These are sample commands to draw out some information 
-    // This is the section that you will replace with your own code
-
     
-    sprintf (buffer, "G0 X2.5 Y-2.5\n");
-    SendCommands(buffer);
-    sprintf (buffer, "S1000\n");
-    SendCommands(buffer);
-    sprintf (buffer, "G1 X7.5 Y-2.5\n");
-    SendCommands(buffer);
-    sprintf (buffer, "G1 X7.5 Y-7.5\n");
-    SendCommands(buffer);
-    sprintf (buffer, "G1 X2.5 Y-7.5\n");
-    SendCommands(buffer);
-    sprintf (buffer, "G1 X2.5 Y-2.5\n");
-    SendCommands(buffer);
+    /* Load the font file */
+    if (loadStrokesFile("SingleStrokeFont.txt", font) == 0)
+    {
+        printf("\nError: Could not load SingleStrokeFont.txt\n");
+        CloseRS232Port();
+        return 1;
+    }
+
+    /* Load text from file */
+    if (loadTextFile("test.txt", textBuffer) == 0)
+    {
+        printf("\nError: Could not load test.txt\n");
+        CloseRS232Port();
+        return 1;
+    }
+
+    /* Set a drawing height manual for now*/
+    userHeight = 8.0f;
+
+    /* Compute scaling factor */
+    scaleFactor = calculateScalingFactor(userHeight);
+
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
     sprintf (buffer, "G0 X0 Y0\n");
