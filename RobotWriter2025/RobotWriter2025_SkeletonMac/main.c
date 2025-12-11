@@ -19,6 +19,8 @@
 #define bdrate 115200               /* 115200 baud */
 
 void SendCommands (char *buffer );
+void newLine(float *currentX, float *currentY); 
+void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale);
 
 int main()
 {
@@ -110,4 +112,59 @@ void SendCommands (char *buffer )
     #else
     Sleep(100); // Can omit this when using the writing robot but has minimal effect
     #endif
+}
+
+void newLine(float *currentX, float *currentY)
+{
+    *currentX = 0.0f;
+    *currentY = *currentY - 5.0f;
+}
+
+void sendCharacter(char c, float *currentX, float *currentY, CharacterData font[], float scale)
+{
+    int ascii;
+    CharacterData *ch;
+    int i;
+    float x, y;
+    char buffer[100];
+
+    ascii = (int)c;
+
+    if (ascii < 0 || ascii > 127)
+    {
+        return;
+    }
+
+    ch = &font[ascii];
+
+    if (ch->strokeCount == 0)
+    {
+        *currentX = *currentX + (3.0f * scale);
+        return;
+    }
+
+    for (i = 0; i < ch->strokeCount; i++) 
+    {
+        x = *currentX + (ch->strokes[i].x * scale); 
+        y = *currentY + (ch->strokes[i].y * scale);
+
+        if (ch->strokes[i].pen == 0)
+        {
+            sprintf(buffer, "S0\n");
+            SendCommands(buffer);
+
+            sprintf(buffer, "G0 X%.3f Y%.3f\n", x, y);
+            SendCommands(buffer);
+        }
+        else
+        {
+            sprintf(buffer, "S1000\n");
+            SendCommands(buffer);
+
+            sprintf(buffer, "G1 X%.3f Y%.3f\n", x, y);
+            SendCommands(buffer);
+        }
+    }
+
+    *currentX = *currentX + (ch->width * scale);
 }
