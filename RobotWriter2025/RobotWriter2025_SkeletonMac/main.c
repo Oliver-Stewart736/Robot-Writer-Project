@@ -26,6 +26,7 @@ int main()
 {
     char buffer[100];
     char textBuffer[MAX_TEXT_LENGTH];
+    char filename[50];
     CharacterData font[128];
     float userHeight;
     float scaleFactor;
@@ -35,6 +36,19 @@ int main()
     {
         printf ("\nUnable to open the COM port (specified in serial.h) ");
         exit (0);
+    }
+
+    printf("\nEnter the text file to load: "); 
+    scanf("%s", filename);
+
+    printf("Enter a drawing height (4–10 mm): ");
+    scanf("%f", &userHeight);
+
+    if (userHeight < 4 || userHeight > 10)
+    {
+        printf("Error: Height must be between 4 and 10 mm.\n");
+        CloseRS232Port();
+        return 1;
     }
 
     // Time to wake up the robot
@@ -56,7 +70,6 @@ int main()
 
     printf ("\nThe robot is now ready to draw\n");
 
-    //These commands get the robot into 'ready to draw mode' and need to be sent before any writing commands
     sprintf (buffer, "G1 X0 Y0 F1000\n");
     SendCommands(buffer);
     sprintf (buffer, "M3\n");
@@ -72,20 +85,17 @@ int main()
         return 1;
     }
 
-    /* Load text from file */
-    if (loadTextFile("test.txt", textBuffer) == 0)
+    /* Load text using the filename provided by the user */
+    if (loadTextFile(filename, textBuffer) == 0)
     {
-        printf("\nError: Could not load test.txt\n");
-        CloseRS232Port();
+        printf("\nError: Could not load %s\n", filename);
         return 1;
     }
 
-    /* Set a drawing height manual for now*/
-    userHeight = 8.0f;
-
     /* Compute scaling factor */
-    scaleFactor = calculateScalingFactor(userHeight);
+    scaleFactor = calculateScalingFactor(userHeight); 
 
+    /* ==== Draw text (Commit 8 code remains unchanged) ==== */
     float currentX = 0.0f;
     float currentY = 0.0f;
 
