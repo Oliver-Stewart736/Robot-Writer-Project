@@ -17,7 +17,7 @@
 /* Function to send commands to the robot */
 void SendCommands (char *buffer );
 /* Function to start a new line */
-void newLine(float *currentX, float *currentY);
+void newLine(float *currentX, float *currentY, float scaleFactor);
 /* Function to handle spaces */
 void handleSpace(float *currentX, float *currentY, float scaleFactor);
 /* Function to send a character for the robot to write */
@@ -112,7 +112,7 @@ int main()
         /* Handles newlines */
         if (c == '\n')
         {
-            newLine(&currentX, &currentY);
+            newLine(&currentX, &currentY, scaleFactor);
             i++;                                    // Move to next character
             continue;
         }
@@ -129,7 +129,7 @@ int main()
         float upcomingWordWidth = getWordWidth(textBuffer, i, font, scaleFactor);
         if (currentX + upcomingWordWidth > MAX_LINE_WIDTH)
         {
-            newLine(&currentX, &currentY);
+            newLine(&currentX, &currentY, scaleFactor);
         }
 
         /* Draw character */
@@ -166,12 +166,12 @@ void SendCommands (char *buffer )
 }
 
 /* Move to a new line */
-void newLine(float *currentX, float *currentY)
+void newLine(float *currentX, float *currentY, float scaleFactor)
 {
     char buffer[100];
 
     float newX = 0.0f;               // New X to start of new line
-    float newY = *currentY - 5.0f;   // New Y down 5 mm
+    float newY = *currentY - (18.0f * scaleFactor + 2.0f);   // New Y down based on the scale factor
  
     // PAGE OVERFLOW CHECK
     if (newY < -100.0f)
